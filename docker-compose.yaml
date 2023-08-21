@@ -1,0 +1,36 @@
+version: "3"
+
+services:
+  bet-maker:
+    build: ./bet-maker
+    container_name: bet-maker
+    restart: always
+    command: uvicorn app:app --reload --host 0.0.0.0 --port 8000 --log-level 'info'
+    ports:
+      - 8001:8000
+    environment:
+      - LINE_PROVIDER_URL=http://line-provider:8000/
+      - DATABASE_URL=postgresql+asyncpg://bet-maker-db-user:bet-maker-db-user-password@bet-maker-db/test
+    depends_on:
+      - bet-maker-db
+
+  line-provider:
+    build: ./line-provider
+    container_name: line-provider
+    restart: always
+    command: uvicorn app:app --reload --host 0.0.0.0 --port 8000 --log-level 'info'
+    ports:
+      - 8002:8000
+    environment:
+      - BET_MAKER_URL=http://bet-maker:8000/
+
+  bet-maker-db:
+    image: postgres:15.4-alpine
+    container_name: postgres
+    restart: always
+    environment:
+      - POSTGRES_USER=bet-maker-db-user
+      - POSTGRES_PASSWORD=bet-maker-db-user-password
+      - POSTGRES_DB=test
+    ports:
+      - "8003:5432"
